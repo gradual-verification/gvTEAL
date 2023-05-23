@@ -1864,6 +1864,13 @@ func (ops *OpStream) toViper(text string, methodName string) {
 
     varIndex := 1
     stack := []int{}
+	var returnType string
+
+	opcodeResultType := map[string]string{
+		"int":  "Int",
+		"+":    "Int",
+		"==":   "Bool",
+	}
 
     viperCodeGen := map[string]func(args []string) string{
         "int": func(args []string) string {
@@ -1890,7 +1897,9 @@ func (ops *OpStream) toViper(text string, methodName string) {
 		},
     }
 
-    viperCode := fmt.Sprintf("method %s() returns ($result: Bool)\n{\n", methodName)
+	viperBody := ""
+
+    //viperCode := fmt.Sprintf("method %s() returns ($result: Bool)\n{\n", methodName)
 
     for scanner.Scan() {
         line := scanner.Text()
@@ -1901,13 +1910,15 @@ func (ops *OpStream) toViper(text string, methodName string) {
         }
 
         if viperFunc, ok := viperCodeGen[tokens[0]]; ok {
-            viperCode += "  " + viperFunc(tokens[1:]) + "\n"
-        } else {
-            fmt.Printf("Unsupported opcode: %s\n", tokens[0])
-        }
+			viperBody += "  " + viperFunc(tokens[1:]) + "\n"
+			returnType = opcodeResultType[tokens[0]]
+		} else {
+			fmt.Printf("Unsupported opcode: %s\n", tokens[0])
+		}
     }
 
     //viperCode += fmt.Sprintf("  $result := var%d\n}\n", varIndex-1)
+	viperCode := fmt.Sprintf("method %s() returns ($result: %s)\n{\n", methodName, returnType) + viperBody
 	viperCode += "}\n"
 
     if err := scanner.Err(); err != nil {
