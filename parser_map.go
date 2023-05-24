@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -1928,7 +1929,19 @@ func (ops *OpStream) toViper(text string, methodName string) {
         fmt.Println(err.Error())
     }
 
-    fmt.Println(viperCode)
+    // Create a new .vpr file with the methodName as the file name
+	file, err := os.Create(fmt.Sprintf("%s.vpr", methodName))
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	defer file.Close()
+
+	// Write the Viper code to the file
+	_, err = file.WriteString(viperCode)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 }
 
 func main() {
