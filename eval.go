@@ -427,6 +427,7 @@ func (st StackType) overlaps(expected StackType) bool {
 }
 
 func opPlus(cx *EvalContext) error {
+	fmt.Println("Plus called!!!")
 	last := len(cx.stack) - 1
 	prev := last - 1
 	sum, carry := bits.Add64(cx.stack[prev].Uint, cx.stack[last].Uint, 0)
@@ -439,6 +440,7 @@ func opPlus(cx *EvalContext) error {
 }
 
 func opEq(cx *EvalContext) error {
+	fmt.Println("Equals called!!!")
 	last := len(cx.stack) - 1
 	prev := last - 1
 	ta := cx.stack[prev].avmType()
@@ -461,6 +463,7 @@ func opReturn(cx *EvalContext) error {
 	// Achieve the end condition:
 	// Take the last element on the stack and make it the return value (only element on the stack)
 	// Move the pc to the end of the program
+	fmt.Println("Return called!!!")
 	last := len(cx.stack) - 1
 	cx.stack[0] = cx.stack[last]
 	cx.stack = cx.stack[:1]

@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"os/exec"
 	"sort"
 	"strconv"
 	"strings"
@@ -34,6 +35,29 @@ type byteReference struct {
 	// position of the opcode start that declares the byte value
 	position int
 }
+
+type Stack []string
+
+func (s *Stack) IsEmpty() bool {
+	return len(*s) == 0
+}
+
+func (s *Stack) Push(str string) {
+	*s = append(*s, str)
+}
+
+func (s *Stack) Pop() (string, bool) {
+	if s.IsEmpty() {
+		return "", false
+	} else {
+		index := len(*s) - 1   // Get the index of the top most element.
+		element := (*s)[index] // Index into the slice and obtain the element.
+		*s = (*s)[:index]      // Remove it from the stack by slicing it off.
+		return element, true
+	}
+}
+
+var viperStack Stack
 
 type constReference interface {
 	// get the referenced value
@@ -72,6 +96,10 @@ const assemblerNoVersion = (^uint64(0))
 // optimizeConstantsEnabledVersion is the first version of TEAL where the
 // assembler optimizes constants introduced by pseudo-ops
 const optimizeConstantsEnabledVersion = 4
+
+var viperCode string = "method add(n: Int) returns (res: Int)\n \trequires true\n\tensures true\n\t{"
+
+var variableCount int64 = 0
 
 func asmPushInt(ops *OpStream, spec *OpSpec, args []string) error {
 	if len(args) != 1 {
@@ -1663,7 +1691,6 @@ func getSpec(ops *OpStream, name string, args []string) (OpSpec, string, bool) {
 		}
 		return pseudo, pseudo.Name, true
 	}
-	fmt.Println("mmm", ops.Version, name)
 	spec, ok := OpsByName[ops.Version][name]
 	if !ok {
 		var err error
@@ -1797,10 +1824,30 @@ func (ops *OpStream) trackStack(args StackTypes, returns StackTypes, instruction
 		ops.typeErrorf("%s expects %d stack arguments but stack height is %d",
 			strings.Join(instruction, " "), argcount, len(ops.known.stack))
 	} else {
+		fmt.Println(args)
+		fmt.Println(returns[0])
+		fmt.Println(instruction)
+
+		if argcount == 0 {
+			var viperVar string = fmt.Sprintf("t%d", variableCount)
+			var viperCodeStatement string = fmt.Sprintf("var t%d:Int = %d", variableCount, returns[0])
+			viperCode += viperCodeStatement + "\n"
+			fmt.Println(viperCode)
+			variableCount++
+			viperStack.Push(viperVar)
+		} else {
+			// pop with operands
+		}
+
 		firstPop := true
 		for i := argcount - 1; i >= 0; i-- {
 			argType := args[i]
 			stype := ops.known.pop()
+			fmt.Println(variableCount)
+			fmt.Println(i)
+			fmt.Println(argType)
+			fmt.Println(stype)
+			fmt.Println("--------------------------------------------------")
 			if firstPop {
 				firstPop = false
 				ops.trace("pops(%s", argType)
@@ -1812,6 +1859,9 @@ func (ops *OpStream) trackStack(args StackTypes, returns StackTypes, instruction
 					strings.Join(instruction, " "), i, argType, stype)
 			}
 		}
+
+		fmt.Println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+
 		if !firstPop {
 			ops.trace(")")
 		}
@@ -1884,6 +1934,8 @@ func (ops *OpStream) assemble(text string) {
 			}
 			spec, expandedName, ok := getSpec(ops, opstring, current[1:])
 			if ok {
+				// fmt.Println(spec)
+				// fmt.Println(expandedName)
 				ops.trace("%3d: %s\t", ops.sourceLine, opstring)
 				ops.recordSourceLine()
 				if spec.Modes == ModeApp {
@@ -1901,6 +1953,8 @@ func (ops *OpStream) assemble(text string) {
 					if nreturns != nil {
 						returns = nreturns
 					}
+					//fmt.Println(args)
+					//fmt.Println(returns)
 				}
 				ops.trackStack(args, returns, append([]string{expandedName}, current[1:]...))
 				spec.asm(ops, &spec, current[1:]) //nolint:errcheck // ignore error and continue, to collect more errors
@@ -1956,10 +2010,10 @@ func (ops *OpStream) assemble(text string) {
 func main() {
 	source := `
 	#pragma version 1
-	int 2
-	int 1
+	int 20
+	int 15
 	+
-	int 2
+	int 55
 	==
 	return;
 	`
@@ -1967,7 +2021,12 @@ func main() {
 	var ver uint64 = uint64(1)
 	ops := newOpStream(ver)
 	ops.Trace = &strings.Builder{}
-	fmt.Println(ops.Program)
 	ops.assemble(source)
-	fmt.Println(ops)
+	fmt.Println(ops.trace)
+	cmd := exec.Command("/bin/sh", "-c", "cd ../silicon-gv && sbt 'run ../gvTEAL/test.vpr'")
+	stdout, err := cmd.Output()
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(string(stdout))
 }
