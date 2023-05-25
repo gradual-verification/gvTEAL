@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"sort"
 	"strconv"
@@ -97,7 +98,7 @@ const assemblerNoVersion = (^uint64(0))
 // assembler optimizes constants introduced by pseudo-ops
 const optimizeConstantsEnabledVersion = 4
 
-var viperCode string = "method add(n: Int) returns (res: Int)\n \trequires true\n\tensures true\n\t{"
+var viperCode string = "method add() returns ($result: Bool)\n \trequires true\n\tensures true\n{\n\t"
 
 var variableCount int64 = 0
 
@@ -1824,30 +1825,42 @@ func (ops *OpStream) trackStack(args StackTypes, returns StackTypes, instruction
 		ops.typeErrorf("%s expects %d stack arguments but stack height is %d",
 			strings.Join(instruction, " "), argcount, len(ops.known.stack))
 	} else {
-		fmt.Println(args)
-		fmt.Println(returns[0])
-		fmt.Println(instruction)
-
+		// fmt.Println(args)
+		// fmt.Println(returns[0])
+		// fmt.Println(instruction)
+		var viperVar string = fmt.Sprintf("t%d", variableCount)
 		if argcount == 0 {
-			var viperVar string = fmt.Sprintf("t%d", variableCount)
-			var viperCodeStatement string = fmt.Sprintf("var t%d:Int = %d", variableCount, returns[0])
-			viperCode += viperCodeStatement + "\n"
-			fmt.Println(viperCode)
-			variableCount++
-			viperStack.Push(viperVar)
+			var viperCodeStatement string = "\tvar " + viperVar + ":Int := " + returns[0].String()
+			viperCode += viperCodeStatement + "\n\t"
 		} else {
-			// pop with operands
-		}
 
+			if instruction[0] == "+" {
+				var t2, _ = viperStack.Pop()
+				var t1, _ = viperStack.Pop()
+				var viperCodeStatement string = "\tvar " + viperVar + ":Int := " + t1 + "+" + t2
+				viperCode += viperCodeStatement + "\n\t"
+			}
+
+			if instruction[0] == "==" {
+				var t2, _ = viperStack.Pop()
+				var t1, _ = viperStack.Pop()
+				var viperCodeStatement string = "\tvar " + viperVar + ":Bool := " + t1 + "==" + t2
+				viperCode += viperCodeStatement + "\n\t"
+			}
+
+			if instruction[0] == "return" {
+				var t2, _ = viperStack.Pop()
+				var viperCodeStatement string = "\t$result := " + t2
+				viperCode += viperCodeStatement + "\n}"
+			}
+
+		}
+		viperStack.Push(viperVar)
+		variableCount++
 		firstPop := true
 		for i := argcount - 1; i >= 0; i-- {
 			argType := args[i]
 			stype := ops.known.pop()
-			fmt.Println(variableCount)
-			fmt.Println(i)
-			fmt.Println(argType)
-			fmt.Println(stype)
-			fmt.Println("--------------------------------------------------")
 			if firstPop {
 				firstPop = false
 				ops.trace("pops(%s", argType)
@@ -1859,9 +1872,6 @@ func (ops *OpStream) trackStack(args StackTypes, returns StackTypes, instruction
 					strings.Join(instruction, " "), i, argType, stype)
 			}
 		}
-
-		fmt.Println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-
 		if !firstPop {
 			ops.trace(")")
 		}
@@ -2022,8 +2032,13 @@ func main() {
 	ops := newOpStream(ver)
 	ops.Trace = &strings.Builder{}
 	ops.assemble(source)
-	fmt.Println(ops.trace)
-	cmd := exec.Command("/bin/sh", "-c", "cd ../silicon-gv && sbt 'run ../gvTEAL/test.vpr'")
+	f, e := os.Create("teal.vpr")
+	if e != nil {
+		panic(e)
+	}
+	defer f.Close()
+	fmt.Fprintln(f, viperCode)
+	cmd := exec.Command("/bin/sh", "-c", "cd ../silicon-gv && sbt 'run ../gvTEAL/teal.vpr'")
 	stdout, err := cmd.Output()
 	if err != nil {
 		fmt.Println(err)
