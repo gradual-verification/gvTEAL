@@ -1,0 +1,25 @@
+field balance : Int
+
+predicate balanceGE(a : Ref, amount : Int) {
+  acc(a.balance) && a.balance >= amount
+}
+
+method withdraw(account: Ref, amount : Int)
+  requires balanceGE(account, amount)
+  ensures ? && balanceGE(account, 0)
+{
+  unfold balanceGE(account, amount)
+  account.balance := account.balance - amount
+  fold balanceGE(account, 0)
+}
+
+method main(account : Ref)
+  requires acc(account.balance)
+{
+  account.balance := 100
+  fold balanceGE(account, 30)
+  withdraw(account, 30)
+  unfold balanceGE(account, 0)
+  fold balanceGE(account, 40)
+  withdraw(account, 40)
+}

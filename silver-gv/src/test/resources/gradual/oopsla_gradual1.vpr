@@ -1,0 +1,46 @@
+field val : Int
+field next : Ref
+field head : Ref
+
+predicate acyclic(this: Ref) { ? && true }
+
+method insertLast(this: Ref, value: Int)
+  requires acyclic(this)
+  ensures acyclic(this)
+{
+  unfold acyclic(this)
+  if (this.head == null) {
+    var newHead : Ref
+    newHead := new(val, next)
+    newHead.val := value
+    newHead.next := null
+    this.head := newHead
+    fold acyclic(this)
+  } else {
+    fold acyclic(this)
+    insertLastHelper(this, value)
+  }
+}
+
+method insertLastHelper(this: Ref, value: Int)
+  requires acyclic(this)
+      && unfolding acyclic(this) in (this.head != null)
+  ensures acyclic(this)
+{
+  unfold acyclic(this)
+  var y: Ref := this.head
+
+  while (y.next != null)
+    invariant ? && y != null && 5 == 5
+  {
+    y := y.next
+  }
+
+  var newNode : Ref
+  newNode := new(val, next)
+  newNode.val := value
+  newNode.next := null
+  y.next := newNode
+
+  fold acyclic(this)
+}

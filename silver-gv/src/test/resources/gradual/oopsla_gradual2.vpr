@@ -1,0 +1,60 @@
+field val : Int
+field next : Ref
+field head : Ref
+
+predicate acyclic(this: Ref) {
+  acc(this.head) && listSeg(this.head, null)
+}
+
+predicate listSeg(from: Ref, to: Ref) {
+  (from == to) ? true : (acc(from.val) && acc(from.next)
+      && listSeg(from.next, to))
+}
+
+method insertLast(this: Ref, value: Int)
+  requires acyclic(this)
+  ensures acyclic(this)
+{
+  unfold acyclic(this)
+  if (this.head == null) {
+    var newHead : Ref
+    newHead := new(val, next)
+    newHead.val := value
+    newHead.next := null
+    this.head := newHead
+    fold listSeg(this.head.next, null)
+    fold listSeg(this.head, null)
+    fold acyclic(this)
+  } else {
+    fold acyclic(this)
+    insertLastHelper(this, value)
+  }
+}
+
+method insertLastHelper(this: Ref, value: Int)
+  requires acyclic(this)
+      && unfolding acyclic(this) in (this.head != null)
+  ensures ? && true
+{
+  unfold acyclic(this)
+  var y: Ref := this.head
+  unfold listSeg(y, null)
+
+  while (y.next != null)
+    invariant y != null && acc(y.val)
+      && acc(y.next) && listSeg(y.next, null)
+  {
+    var x: Ref := y
+    y := y.next
+    unfold listSeg(y, null)
+  }
+
+  var newNode : Ref
+  newNode := new(val, next)
+  newNode.val := value
+  newNode.next := null
+  y.next := newNode
+  fold listSeg(y.next.next, null)
+  fold listSeg(y.next, null)
+  fold listSeg(y, null)
+}

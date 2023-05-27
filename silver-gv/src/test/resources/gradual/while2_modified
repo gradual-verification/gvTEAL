@@ -1,0 +1,60 @@
+// Any copyright is dedicated to the Public Domain.
+// http://creativecommons.org/publicdomain/zero/1.0/
+
+// tests cases using ? and a ? b : c
+
+field f: Int
+
+method test00(x: Ref) returns (b: Bool)
+  requires acc(x.f)
+{
+  while (b)
+    // ? should be nothing
+    invariant ? && true
+    invariant (b ? acc(x.f, 1) : true)
+  {
+    b := !b
+  }
+
+}
+/*
+// should have a parse error
+method test01(x: Ref) returns (b: Bool)
+  requires acc(x.f)
+{
+  while (b)
+    invariant ? acc(x.f, 1) : true
+  {
+    b := !b
+  }
+
+}
+*/
+/*
+// should fail to parse
+method test10(x: Ref) returns (b: Bool)
+  requires ? && ?
+{
+  while (b)
+    // ? should be nothing
+    invariant ? && (b ? acc(x.f, 1) : true)
+  {
+    b := !b
+  }
+
+}
+*/
+
+// not sure why this is supposed to fail, but it should
+method test11(x: Ref) returns (b: Bool)
+  requires acc(x.f)
+{
+  x.f := 1
+
+  //:: ExpectedOutput(while.failed:insufficient.permission)
+  while (x.f > 0)
+    invariant true
+  {
+    b := !b
+  }
+}

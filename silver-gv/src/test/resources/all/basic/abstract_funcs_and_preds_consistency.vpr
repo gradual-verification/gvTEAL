@@ -1,0 +1,32 @@
+// Any copyright is dedicated to the Public Domain.
+// http://creativecommons.org/publicdomain/zero/1.0/
+
+predicate foo()
+/*
+function fun(): Bool { true }
+*/
+method test01() {
+  // ExpectedOutput(typechecker.error) // revive this annotation when parser error not expected in this test file - Jenna
+  fold acc(foo())
+  // ExpectedOutput(typechecker.error) // revive this annotation when parser error not expected in this test file - Jenna
+  unfold acc(foo())
+}
+
+method test02() {
+  // ExpectedOutput(typechecker.error) // revive this annotation when parser error not expected in this test file - Jenna
+  //:: ExpectedOutput(parser.error)
+  assert unfolding acc(foo()) in true
+}
+/*
+function fun01(): Bool
+  requires acc(foo())
+{
+  /:: ExpectedOutput(typechecker.error)
+  unfolding acc(foo()) in true
+}
+*/
+predicate bar() {
+     acc(foo())
+     // ExpectedOutput(typechecker.error) // revive this annotation when parser error not expected in this test file - Jenna
+  && unfolding acc(foo()) in true
+}

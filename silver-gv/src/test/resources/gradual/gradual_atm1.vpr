@@ -1,0 +1,13 @@
+method withdraw(balance: Int, amount: Int) returns (remaining: Int)
+    requires balance >= amount
+    ensures ? && remaining >= 0
+{
+    remaining := balance - amount
+}
+
+method main()
+{
+    var bal: Int := 100
+    bal := withdraw(bal, 30)
+    bal := withdraw(bal, 40)
+}

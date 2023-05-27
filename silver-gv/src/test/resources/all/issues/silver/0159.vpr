@@ -1,0 +1,13 @@
+// Any copyright is dedicated to the Public Domain.
+// http://creativecommons.org/publicdomain/zero/1.0/
+
+field x: Int
+
+method m(e: Ref)
+{
+  // ExpectedOutput(assert.failed:receiver.not.injective) // revive these 3 annotations when below parser error not expected in this test file - Jenna
+  // ExpectedOutput(assert.failed:insufficient.permission)
+  // MissingOutput(assert.failed:insufficient.permission, /silicon/issue/34/)
+  //:: ExpectedOutput(parser.error)
+  assert forall i: Int :: i < 4 && i > 0 ==> acc(e.x)
+}

@@ -1,0 +1,10 @@
+// Any copyright is dedicated to the Public Domain.
+// http://creativecommons.org/publicdomain/zero/1.0/
+
+field f: Int
+
+//:: ExpectedOutput(parser.error)
+method test(xs: Set[Ref], ys: Seq[Ref])
+  // ExpectedOutput(consistency.error) // revive this annotation when parser error not expected in this test file - Jenna
+  requires forall x: Ref :: ((x in xs) && (forall i: Int :: i in [0..|ys|) ==> acc(ys[i].f))) ==> acc(x.f)
+{}

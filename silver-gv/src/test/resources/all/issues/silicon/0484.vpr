@@ -1,0 +1,19 @@
+field left: Ref
+field right: Ref
+
+predicate treePerm_simpler(current: Ref) {
+  current != null ?
+    acc(current.left) && true : true
+}
+
+method insert_simpler(current: Ref, bool_val: Bool)
+  requires bool_val
+  requires acc(current.left)
+{
+
+  fold acc(treePerm_simpler(current))
+
+  assert
+    //:: ExpectedOutput(parser.error)
+    current != null || unfolding acc(treePerm_simpler(current)) in true
+}

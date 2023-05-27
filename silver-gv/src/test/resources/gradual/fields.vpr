@@ -1,0 +1,8 @@
+field f: Int
+
+method test01(x: Ref) returns (b: Bool)
+  requires x == null && acc(x.f)
+  ensures x != null && x == null
+{
+
+}

@@ -1,0 +1,15 @@
+// Any copyright is dedicated to the Public Domain.
+// http://creativecommons.org/publicdomain/zero/1.0/
+//:: IgnoreFile(/silicon/issue/208/)
+
+predicate b1() { true }
+predicate b2() { true }
+
+
+domain D {
+  function b1(): Bool
+  function b2(): Bool
+  axiom bothTrue {
+    b1() && b2()
+  }
+)

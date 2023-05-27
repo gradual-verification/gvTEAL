@@ -1,0 +1,327 @@
+// this .vpr example was auto generated from the C0 frontend and corresponding composite.c0 program
+
+field $struct_Node$left: Ref
+field $struct_Node$parent: Ref
+field $struct_Node$right: Ref
+field $struct_Node$total: Int
+
+ predicate subtreeHelper(l: Ref, r: Ref, parent: Ref, total: Int) {
+   (l == null ? (r == null ? total == 1 : acc(r.$struct_Node$left, write) && acc(r.$struct_Node$right, write) && acc(r.$struct_Node$parent, write) && acc(r.$struct_Node$total, write) && r.$struct_Node$parent == parent && acc(subtreeHelper(r.$struct_Node$left, r.$struct_Node$right, r, r.$struct_Node$total), write) && total == 1 + r.$struct_Node$total) : (r == null ? acc(l.$struct_Node$left, write) && acc(l.$struct_Node$right, write) && acc(l.$struct_Node$parent, write) && acc(l.$struct_Node$total, write) && l.$struct_Node$parent == parent && acc(subtreeHelper(l.$struct_Node$left, l.$struct_Node$right, l, l.$struct_Node$total), write) && total == 1 + l.$struct_Node$total : acc(r.$struct_Node$left, write) && acc(r.$struct_Node$right, write) && acc(r.$struct_Node$parent, write) && acc(r.$struct_Node$total, write) && r.$struct_Node$parent == parent && acc(subtreeHelper(r.$struct_Node$left, r.$struct_Node$right, r, r.$struct_Node$total), write) && acc(l.$struct_Node$left, write) && acc(l.$struct_Node$right, write) && acc(l.$struct_Node$parent, write) && acc(l.$struct_Node$total, write) && l.$struct_Node$parent == parent && acc(subtreeHelper(l.$struct_Node$left, l.$struct_Node$right, l, l.$struct_Node$total), write) && total == 1 + l.$struct_Node$total + r.$struct_Node$total))
+ }
+
+ predicate context(node: Ref, parent: Ref, total: Int) {
+   (parent == null ? true : acc(parent.$struct_Node$left, write) && acc(parent.$struct_Node$right, write) && acc(parent.$struct_Node$parent, write) && acc(parent.$struct_Node$total, write) && acc(context(parent, parent.$struct_Node$parent, parent.$struct_Node$total), write) && (node == parent.$struct_Node$left ? (parent.$struct_Node$right == null ? parent.$struct_Node$total == 1 + total : acc(parent.$struct_Node$right.$struct_Node$left, write) && acc(parent.$struct_Node$right.$struct_Node$right, write) && acc(parent.$struct_Node$right.$struct_Node$parent, write) && acc(parent.$struct_Node$right.$struct_Node$total, write) && parent.$struct_Node$right.$struct_Node$parent == parent && acc(subtreeHelper(parent.$struct_Node$right.$struct_Node$left, parent.$struct_Node$right.$struct_Node$right, parent.$struct_Node$right, parent.$struct_Node$right.$struct_Node$total), write) && parent.$struct_Node$total == 1 + total + parent.$struct_Node$right.$struct_Node$total) : node == parent.$struct_Node$right && (parent.$struct_Node$left == null ? parent.$struct_Node$total == 1 + total : acc(parent.$struct_Node$left.$struct_Node$left, write) && acc(parent.$struct_Node$left.$struct_Node$right, write) && acc(parent.$struct_Node$left.$struct_Node$parent, write) && acc(parent.$struct_Node$left.$struct_Node$total, write) && parent.$struct_Node$left.$struct_Node$parent == parent && acc(subtreeHelper(parent.$struct_Node$left.$struct_Node$left, parent.$struct_Node$left.$struct_Node$right, parent.$struct_Node$left, parent.$struct_Node$left.$struct_Node$total), write) && parent.$struct_Node$total == 1 + total + parent.$struct_Node$left.$struct_Node$total)))
+ }
+
+ predicate tree(node: Ref) {
+   (node == null ? true : acc(node.$struct_Node$left, write) && acc(node.$struct_Node$right, write) && acc(node.$struct_Node$parent, write) && acc(node.$struct_Node$total, write) && acc(context(node, node.$struct_Node$parent, node.$struct_Node$total), write) && acc(subtreeHelper(node.$struct_Node$left, node.$struct_Node$right, node, node.$struct_Node$total), write))
+ }
+
+ method $method_create_tree() returns ($return: Ref)
+   requires true
+   ensures acc(tree($return), write)
+ {
+   var n: Ref
+   n := new($struct_Node$total, $struct_Node$left, $struct_Node$right, $struct_Node$parent)
+   n.$struct_Node$left := null
+   n.$struct_Node$right := null
+   n.$struct_Node$parent := null
+   n.$struct_Node$total := 1
+   fold acc(subtreeHelper(n.$struct_Node$left, n.$struct_Node$right, n, n.$struct_Node$total), write)
+   fold acc(context(n, n.$struct_Node$parent, n.$struct_Node$total), write)
+   fold acc(tree(n), write)
+   $return := n
+ }
+
+ method $method_tree_get_total(node: Ref) returns ($return: Int)
+   requires acc(tree(node), write)
+   ensures acc(tree(node), write)
+ {
+   var n: Int
+   var _: Bool
+   unfold acc(tree(node), write)
+   n := 0
+   _ := node == null
+   if (_) {
+
+   } else {
+     n := node.$struct_Node$total
+   }
+   fold acc(tree(node), write)
+   $return := n
+ }
+
+ method $method_fixup_ancestors(node: Ref, parent: Ref, oldTotal: Int, newTotal: Int) returns ($return: Int)
+   requires acc(context(node, parent, oldTotal), write)
+   ensures acc(context(node, parent, newTotal), write)
+ {
+   var _: Bool
+   var left: Ref
+   var right: Ref
+   var grandparent: Ref
+   var oldparentTotal: Int
+   var leftTotal: Int
+   var rightTotal: Int
+   var parentTotal: Int
+   var _1: Bool
+   var _2: Bool
+   var _3: Bool
+   var parentTotal1: Int
+   var tmp: Int
+
+   unfold acc(context(node, parent, oldTotal), write)
+   _ := parent == null
+   if (_) {
+
+   } else {
+     left := parent.$struct_Node$left
+     right := parent.$struct_Node$right
+     grandparent := parent.$struct_Node$parent
+     oldparentTotal := parent.$struct_Node$total
+     leftTotal := 0
+     rightTotal := 0
+     _1 := node == left
+     if (_1) {
+       leftTotal := newTotal
+       _2 := right != null
+       if (_2) {
+         rightTotal := right.$struct_Node$total
+       }
+     } else {
+       _3 := left != null
+       if (_3) {
+         leftTotal := left.$struct_Node$total
+       }
+       rightTotal := newTotal
+     }
+     parentTotal1 := 1 + leftTotal
+     parentTotal := parentTotal1 + rightTotal
+     parent.$struct_Node$total := parentTotal
+     tmp := $method_fixup_ancestors(parent, grandparent, oldparentTotal, parentTotal)
+   }
+   fold acc(context(node, parent, newTotal), write)
+   $return := 0
+ }
+
+method $method_tree_add_left(node: Ref) returns ($return: Ref)
+   requires acc(tree(node), write)
+   ensures acc(tree($return), write)
+ {
+   var _: Bool
+   var n: Ref
+   var nodeLeft: Ref
+   var _1: Bool
+   var tmp: Int
+   unfold acc(tree(node), write)
+   _ := node == null
+   if (_) {
+     fold acc(tree(node), write)
+     $return := node
+   } else {
+     n := new($struct_Node$total, $struct_Node$left, $struct_Node$right, $struct_Node$parent)
+     n.$struct_Node$left := null
+     n.$struct_Node$right := null
+     n.$struct_Node$parent := node
+     n.$struct_Node$total := 1
+     fold acc(subtreeHelper(n.$struct_Node$left, n.$struct_Node$right, n, n.$struct_Node$total), write)
+     nodeLeft := node.$struct_Node$left
+     _1 := nodeLeft != null
+     if (_1) {
+       fold acc(tree(node), write)
+       $return := node
+     } else {
+       unfold acc(subtreeHelper(nodeLeft, node.$struct_Node$right, node, node.$struct_Node$total), write)
+       node.$struct_Node$left := n
+       fold acc(context(n, node, 0), write)
+       tmp := $method_fixup_ancestors(n, node, 0, 1)
+       fold acc(tree(n), write)
+       $return := n
+     }
+   }
+ }
+ method $method_tree_add_right(node: Ref) returns ($return: Ref)
+   requires acc(tree(node), write)
+   ensures acc(tree($return), write)
+ {
+   var _: Bool
+   var n: Ref
+   var nodeRight: Ref
+   var _1: Bool
+   var tmp: Int
+   unfold acc(tree(node), write)
+   _ := node == null
+   if (_) {
+     fold acc(tree(node), write)
+     $return := node
+   } else {
+     n := new($struct_Node$total, $struct_Node$left, $struct_Node$right, $struct_Node$parent)
+     n.$struct_Node$left := null
+     n.$struct_Node$right := null
+     n.$struct_Node$parent := node
+     n.$struct_Node$total := 1
+     fold acc(subtreeHelper(n.$struct_Node$left, n.$struct_Node$right, n, n.$struct_Node$total), write)
+     nodeRight := node.$struct_Node$right
+     _1 := nodeRight != null
+     if (_1) {
+       fold acc(tree(node), write)
+       $return := node
+     } else {
+       unfold acc(subtreeHelper(node.$struct_Node$left, nodeRight, node, node.$struct_Node$total), write)
+       node.$struct_Node$right := n
+       fold acc(context(n, node, 0), write)
+       tmp := $method_fixup_ancestors(n, node, 0, 1)
+       fold acc(tree(n), write)
+       $return := n
+     }
+   }
+ }
+
+ method $method_tree_get_parent(node: Ref) returns ($return: Ref)
+   requires acc(tree(node), write)
+   ensures acc(tree($return), write)
+ {
+   var _: Bool
+   var parent: Ref
+   var _1: Bool
+   unfold acc(tree(node), write)
+   _ := node == null
+   if (_) {
+     fold acc(tree(null), write)
+     $return := null
+   } else {
+     parent := node.$struct_Node$parent
+     _1 := parent == null
+     if (_1) {
+       fold acc(tree(null), write)
+       $return := null
+     } else {
+       unfold acc(context(node, parent, node.$struct_Node$total), write)
+       assert acc(context(parent, parent.$struct_Node$parent, parent.$struct_Node$total), write)
+       fold acc(subtreeHelper(parent.$struct_Node$left, parent.$struct_Node$right, parent, parent.$struct_Node$total), write)
+       fold acc(tree(parent), write)
+       $return := parent
+     }
+   }
+ }
+
+ method $method_tree_get_left(node: Ref) returns ($return: Ref)
+   requires acc(tree(node), write)
+   ensures acc(tree($return), write)
+ {
+   var _: Bool
+   var left: Ref
+   var _1: Bool
+   unfold acc(tree(node), write)
+   _ := node == null
+   if (_) {
+     fold acc(tree(null), write)
+     $return := null
+   } else {
+     left := node.$struct_Node$left
+     _1 := left != null
+     if (_1) {
+       unfold acc(subtreeHelper(left, node.$struct_Node$right, node, node.$struct_Node$total), write)
+       fold acc(context(left, node, left.$struct_Node$total), write)
+     }
+     fold acc(tree(left), write)
+     $return := left
+   }
+ }
+
+ method $method_tree_get_right(node: Ref) returns ($return: Ref)
+   requires acc(tree(node), write)
+   ensures acc(tree($return), write)
+ {
+   var _: Bool
+   var right: Ref
+   var _1: Bool
+   unfold acc(tree(node), write)
+   _ := node == null
+   if (_) {
+     fold acc(tree(null), write)
+     $return := null
+   } else {
+     right := node.$struct_Node$right
+     _1 := right != null
+     if (_1) {
+       unfold acc(subtreeHelper(node.$struct_Node$left, right, node, node.$struct_Node$total), write)
+       fold acc(context(right, node, right.$struct_Node$total), write)
+     }
+     fold acc(tree(right), write)
+     $return := right
+   }
+ }
+
+ method $method_tree_has_parent(node: Ref) returns ($return: Bool)
+   requires acc(tree(node), write)
+   ensures acc(tree(node), write)
+ {
+   var res: Bool
+   var _: Bool
+   var parent: Ref
+   unfold acc(tree(node), write)
+   res := false
+   _ := node == null
+   if (_) {
+
+   } else {
+     parent := node.$struct_Node$parent
+     res := parent != null
+   }
+   fold acc(tree(node), write)
+   $return := res
+ }
+
+ method $method_tree_has_left(node: Ref) returns ($return: Bool)
+   requires acc(tree(node), write)
+   ensures acc(tree(node), write)
+ {
+   var res: Bool
+   var _: Bool
+   var left: Ref
+   unfold acc(tree(node), write)
+   res := false
+   _ := node == null
+   if (_) {
+
+   } else {
+     left := node.$struct_Node$left
+     res := left != null
+   }
+   fold acc(tree(node), write)
+   $return := res
+ }
+
+ method $method_tree_has_right(node: Ref) returns ($return: Bool)
+   requires acc(tree(node), write)
+   ensures acc(tree(node), write)
+ {
+   var res: Bool
+   var _: Bool
+   var right: Ref
+   unfold acc(tree(node), write)
+   res := false
+   _ := node == null
+   if (_) {
+
+   } else {
+     right := node.$struct_Node$right
+     res := right != null
+   }
+   fold acc(tree(node), write)
+   $return := res
+ }
+ method $method_main() returns ($return: Int)
+   requires true
+   ensures true
+ {
+   var node: Ref
+   node := $method_create_tree()
+   node := $method_tree_add_left(node)
+   node := $method_tree_add_right(node)
+   node := $method_tree_get_parent(node)
+   node := $method_tree_add_left(node)
+   node := $method_tree_get_parent(node)
+   node := $method_tree_get_parent(node)
+   $return := 0
+ }

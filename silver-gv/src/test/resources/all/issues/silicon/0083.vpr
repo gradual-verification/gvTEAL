@@ -1,0 +1,41 @@
+// Any copyright is dedicated to the Public Domain.
+// http://creativecommons.org/publicdomain/zero/1.0/
+
+field f: Int
+
+//:: ExpectedOutput(parser.error)
+method test1(xs: Seq[Int])
+  // ExpectedOutput(not.wellformed:seq.index.negative) // revive this annotation when parser error not expected in this test file - Jenna
+  requires xs[-1] != 0
+
+method test10(xs: Seq[Int])
+  // ExpectedOutput(not.wellformed:seq.index.length) // revive this annotation when parser error not expected in this test file - Jenna
+  ensures xs[1] != 0
+
+method test2(xs: Seq[Int], n: Int)
+  requires 5 < n
+  // ExpectedOutput(not.wellformed:seq.index.length) // revive this annotation when parser error not expected in this test file - Jenna
+  requires forall i: Int :: i in [0..n) ==> xs[i] != 0
+{
+  // ExpectedOutput(assert.failed:seq.index.length) // revive this annotation when parser error not expected in this test file - Jenna
+  // MissingOutput(assert.failed:seq.index.length, /silicon/issue/34/) // revive this annotation when parser error not expected in this test file - Jenna
+  assert xs[3] != 0
+}
+
+method test3(xs: Seq[Ref], n: Int)
+  requires 5 < n && n < |xs|
+  requires xs[0] != null
+  requires forall i: Int :: i in [0..n) ==> acc(xs[i].f)
+{
+  var y: Int := xs[3].f
+}
+/*
+function fun(i: Int): Bool
+
+method test20(xs: Seq[Int], i: Int) {
+  /:: ExpectedOutput(assignment.failed:seq.index.negative)
+  /:: ExpectedOutput(assignment.failed:seq.index.length)
+  /:: MissingOutput(assignment.failed:seq.index.length, /silicon/issue/34/)
+  var b: Bool := fun(xs[i])
+}
+*/

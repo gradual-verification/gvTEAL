@@ -1,0 +1,26 @@
+// Any copyright is dedicated to the Public Domain.
+// http://creativecommons.org/publicdomain/zero/1.0/
+
+field f: Int
+
+method test01(x: Ref) returns (b: Bool)
+  requires acc(x.f)
+  //:: ExpectedOutput(parser.error)
+  ensures  acc(x.f) && x.f == old(x.f)
+{
+  while (b)
+    invariant acc(x.f, 1) // 1/2
+  {
+    b := !b
+  }
+}
+
+
+method test02(x: Ref) returns (b: Bool) {
+  while (b)
+    // ExpectedOutput(invariant.not.established:insufficient.permission) // revive this annotation when parser error not expected in this test file - Jenna
+    invariant acc(x.f, 1) // 1/2
+  {
+    b := !b
+  }
+}

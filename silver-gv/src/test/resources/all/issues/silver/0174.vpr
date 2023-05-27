@@ -1,0 +1,12 @@
+// Any copyright is dedicated to the Public Domain.
+// http://creativecommons.org/publicdomain/zero/1.0/
+
+field val: Int
+
+//:: ExpectedOutput(parser.error)
+domain Foo {
+  axiom bar {
+    // ExpectedOutput(consistency.error) // revive this annotation when parser error not expected in this test file - Jenna
+    forall r: Ref :: r.val != 0
+  }
+}

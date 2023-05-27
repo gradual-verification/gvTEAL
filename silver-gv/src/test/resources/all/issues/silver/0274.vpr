@@ -1,0 +1,10 @@
+predicate Tree(self: Ref)
+
+method m1(x: Ref) {
+  //:: ExpectedOutput(parser.error)
+  assume Tree(x) // should be inhale
+}
+
+method m2(x: Ref) {
+  assume acc(Tree(x)) // should be inhale
+}

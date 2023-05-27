@@ -1,0 +1,14 @@
+// Any copyright is dedicated to the Public Domain.
+// http://creativecommons.org/publicdomain/zero/1.0/
+
+field frac: Perm
+field data: Ref
+
+method run(this: Ref)
+  requires this != null
+  // ExpectedOutput(not.wellformed:insufficient.permission) // revive this annotation when parser error not expected in this test file - Jenna
+  //:: ExpectedOutput(parser.error)
+  ensures acc(this.data, this.frac)
+{
+  assume false
+}

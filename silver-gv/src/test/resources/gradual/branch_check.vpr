@@ -1,0 +1,129 @@
+ method main() returns ($result: Int)
+ {
+   $result := 0
+ }
+ method test(x: Int, y: Int)
+   requires ? && true
+ {
+   var z: Int
+   if (x > 1) {
+     if (x > 2) {
+       z := testCall(y)
+       assert z > 0
+     }
+   }
+ }
+ method test2(x: Int, y: Int)
+   requires ? && true
+ {
+   if (x > 1) {
+     if (x > 2) {
+       assert x < 0
+     }
+   }
+ }
+ method test3(x: Int, y: Int)
+   requires ? && true
+ {
+   if (x > 2) {
+     //:: ExpectedOutput(assert.failed:assertion.false)
+     assert x < 0
+   } else {
+     assert x > 2
+   }
+ }
+ method test4(x: Int, y: Int)
+   requires ? && true
+ {
+   if (x > 1) {
+     if (x > 2) {
+       assert x < 0
+     } else {
+       assert x > 2
+     }
+   }
+ }
+ method test5(x: Int, y: Int)
+   requires ? && true
+ {
+   if (x > 1) {
+     
+   } else {
+     assert x > 1
+   }
+ }
+ method test6(x: Int, y: Int)
+   requires ? && true
+ {
+   if (!(x > 1)) {
+     assert x <= 1
+   } else {
+     assert x < 1
+   }
+ }
+ method test7(x: Int, y: Int)
+   requires true
+ {
+   if (!(x > 1)) {
+     assert x <= 1
+   } else {
+     //:: ExpectedOutput(assert.failed:assertion.false)
+     assert x < 1
+   }
+ }
+ method testCall(a: Int) returns ($result: Int)
+   ensures (a == 0 ? $result == 0 : true)
+ {
+   $result := a
+ }
+ method testWhile(x: Int, y: Int)
+   requires ? && true
+ {
+   var x1: Int
+   x1 := x
+   while (x1 > 1)
+     invariant ? && true 
+   {
+     assert x1 < 0
+     x1 := x1 - 1
+   }
+ }
+ method testWhile2(x: Int, y: Int)
+   requires ? && true
+ {
+   var x1: Int
+   x1 := x
+   while (x1 > 1)
+     invariant ? && true 
+   {
+     x1 := x1 - 1
+   }
+   //:: ExpectedOutput(assert.failed:assertion.false)
+   assert x1 > 1
+ }
+ method testWhile3(x: Int, y: Int)
+   requires true
+ {
+   var x1: Int
+   x1 := x
+   while (x1 > 1)
+     invariant ? && true 
+   {
+     assert x1 < 0
+     x1 := x1 - 1
+   }
+ }
+ method testWhile4(x: Int, y: Int)
+   requires true
+ {
+   var x1: Int
+   x1 := x
+   while (x1 > 1)
+     invariant true 
+   {
+     //:: ExpectedOutput(assert.failed:assertion.false)
+     assert x1 < 0
+     x1 := x1 - 1
+   }
+ }
+

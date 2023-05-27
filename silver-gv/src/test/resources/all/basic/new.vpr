@@ -1,0 +1,38 @@
+// Any copyright is dedicated to the Public Domain.
+// http://creativecommons.org/publicdomain/zero/1.0/
+
+// test aliasing information of newly created objects
+
+
+field value: Int
+
+/* test aliasing information between newly created objects and objects that already exist but are
+ * "hidden" in predicates.
+ */
+
+field Node_v: Int
+field Node_n: Ref
+
+predicate Node_P(this: Ref) {
+  acc(this.Node_v) && acc(this.Node_n) &&
+     ((this.Node_n != null) ? (acc(Node_P(this.Node_n))) : true)
+}
+
+method test5(n: Ref)
+  requires n != null && acc(Node_P(n), write)
+{
+  var m: Ref
+
+  m := new()
+  assert m != null
+  assert m != n
+
+  unfold acc(Node_P(n), write)
+  //:: UnexpectedOutput(assert.failed:assertion.false, /silicon/issue/29/)
+  assert m != (n.Node_n)
+
+  if (n.Node_n != null) {
+    unfold acc(Node_P(n.Node_n), write)
+    assert m != (n.Node_n.Node_n)
+  }
+}

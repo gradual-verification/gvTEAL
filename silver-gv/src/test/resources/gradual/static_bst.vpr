@@ -1,0 +1,729 @@
+// static verification of bst, generated from C0 frontend and corresponding bst.c0 file, 11.7.21
+
+ field $struct_Node$left: Ref
+ field $struct_Node$right: Ref
+ field $struct_Node$val: Int
+ predicate bstRemove(root: Ref, x: Int, min: Int, max: Int) {
+   (root == null ? true : acc(root.$struct_Node$left, write) && acc(root.$struct_Node$right, write) && acc(root.$struct_Node$val, write) && root.$struct_Node$val >= min && root.$struct_Node$val <= max && root.$struct_Node$val != x && acc(bstRemove(root.$struct_Node$left, x, min, root.$struct_Node$val - 1), write) && acc(bstRemove(root.$struct_Node$right, x, root.$struct_Node$val + 1, max), write))
+ }
+ predicate bst(root: Ref, min: Int, max: Int) {
+   (root == null ? true : acc(root.$struct_Node$left, write) && acc(root.$struct_Node$right, write) && acc(root.$struct_Node$val, write) && root.$struct_Node$val >= min && root.$struct_Node$val <= max && acc(bst(root.$struct_Node$left, min, root.$struct_Node$val - 1), write) && acc(bst(root.$struct_Node$right, root.$struct_Node$val + 1, max), write))
+ }
+ predicate treeRemove(root: Ref, x: Int) {
+   acc(bstRemove(root, x, -2147483647, 2147483647), write)
+ }
+ predicate tree(root: Ref) {
+   acc(bst(root, -2147483647, 2147483647), write)
+ }
+ method $method_tree_max_lemma(root: Ref, newMax: Int, min: Int, max: Int)
+   requires acc(bst(root, min, max), write) && max <= newMax
+   ensures acc(bst(root, min, newMax), write)
+ {
+   var _: Bool
+   var _1: Ref
+   var _2: Int
+   var _3: Int
+   _ := root == null
+   if (_) {
+     
+   } else {
+     unfold acc(bst(root, min, max), write)
+     _1 := root.$struct_Node$right
+     _2 := root.$struct_Node$val
+     _3 := _2 + 1
+     $method_tree_max_lemma(_1, newMax, _3, max)
+   }
+   fold acc(bst(root, min, newMax), write)
+ }
+ method $method_tree_min_lemma(root: Ref, newMin: Int, min: Int, max: Int)
+   requires acc(bst(root, min, max), write) && newMin <= min
+   ensures acc(bst(root, newMin, max), write)
+ {
+   var _: Bool
+   var _1: Ref
+   var _2: Int
+   var _3: Int
+   _ := root == null
+   if (_) {
+     
+   } else {
+     unfold acc(bst(root, min, max), write)
+     _1 := root.$struct_Node$left
+     _2 := root.$struct_Node$val
+     _3 := _2 - 1
+     $method_tree_min_lemma(_1, newMin, min, _3)
+   }
+   fold acc(bst(root, newMin, max), write)
+ }
+ method $method_tree_remove_lemma(root: Ref, min: Int, max: Int)
+   requires acc(bstRemove(root, max, min, max), write)
+   ensures acc(bstRemove(root, max, min, max - 1), write)
+ {
+   var _: Bool
+   var _1: Ref
+   var _2: Int
+   var _3: Int
+   _ := root == null
+   if (_) {
+     
+   } else {
+     unfold acc(bstRemove(root, max, min, max), write)
+     _1 := root.$struct_Node$right
+     _2 := root.$struct_Node$val
+     _3 := _2 + 1
+     $method_tree_remove_lemma(_1, _3, max)
+   }
+   fold acc(bstRemove(root, max, min, max - 1), write)
+ }
+ method $method_tree_remove_lemma_right(r: Ref, x: Int, min: Int, max: Int)
+   requires acc(bst(r, min, max), write) && x < min
+   ensures acc(bstRemove(r, x, min, max), write)
+ {
+   var _: Bool
+   var _1: Ref
+   var _2: Bool
+   var _3: Ref
+   var _4: Int
+   var _5: Int
+   var _6: Ref
+   var _7: Bool
+   var _8: Ref
+   var _9: Int
+   var _10: Int
+   var _11: Ref
+   var _12: Int
+   var _13: Int
+   var _14: Ref
+   var _15: Int
+   var _16: Int
+   _ := r == null
+   if (_) {
+     
+   } else {
+     unfold acc(bst(r, min, max), write)
+     _1 := r.$struct_Node$left
+     _2 := _1 == null
+     if (_2) {
+       _3 := r.$struct_Node$right
+       _4 := r.$struct_Node$val
+       _5 := _4 + 1
+       $method_tree_remove_lemma_right(_3, x, _5, max)
+       fold acc(bstRemove(r.$struct_Node$left, x, min, r.$struct_Node$val - 1), write)
+     } else {
+       _6 := r.$struct_Node$right
+       _7 := _6 == null
+       if (_7) {
+         _8 := r.$struct_Node$left
+         _9 := r.$struct_Node$val
+         _10 := _9 - 1
+         $method_tree_remove_lemma_right(_8, x, min, _10)
+         fold acc(bstRemove(r.$struct_Node$right, x, r.$struct_Node$val + 1, max), write)
+       } else {
+         _11 := r.$struct_Node$right
+         _12 := r.$struct_Node$val
+         _13 := _12 + 1
+         $method_tree_remove_lemma_right(_11, x, _13, max)
+         _14 := r.$struct_Node$left
+         _15 := r.$struct_Node$val
+         _16 := _15 - 1
+         $method_tree_remove_lemma_right(_14, x, min, _16)
+       }
+     }
+   }
+   fold acc(bstRemove(r, x, min, max), write)
+ }
+ method $method_tree_remove_lemma_left(l: Ref, x: Int, min: Int, max: Int)
+   requires acc(bst(l, min, max), write) && max < x
+   ensures acc(bstRemove(l, x, min, max), write)
+ {
+   var _: Bool
+   var _1: Ref
+   var _2: Bool
+   var _3: Ref
+   var _4: Int
+   var _5: Int
+   var _6: Ref
+   var _7: Bool
+   var _8: Ref
+   var _9: Int
+   var _10: Int
+   var _11: Ref
+   var _12: Int
+   var _13: Int
+   var _14: Ref
+   var _15: Int
+   var _16: Int
+   _ := l == null
+   if (_) {
+     
+   } else {
+     unfold acc(bst(l, min, max), write)
+     _1 := l.$struct_Node$left
+     _2 := _1 == null
+     if (_2) {
+       _3 := l.$struct_Node$right
+       _4 := l.$struct_Node$val
+       _5 := _4 + 1
+       $method_tree_remove_lemma_left(_3, x, _5, max)
+       fold acc(bstRemove(l.$struct_Node$left, x, min, l.$struct_Node$val - 1), write)
+     } else {
+       _6 := l.$struct_Node$right
+       _7 := _6 == null
+       if (_7) {
+         _8 := l.$struct_Node$left
+         _9 := l.$struct_Node$val
+         _10 := _9 - 1
+         $method_tree_remove_lemma_left(_8, x, min, _10)
+         fold acc(bstRemove(l.$struct_Node$right, x, l.$struct_Node$val + 1, max), write)
+       } else {
+         _11 := l.$struct_Node$right
+         _12 := l.$struct_Node$val
+         _13 := _12 + 1
+         $method_tree_remove_lemma_left(_11, x, _13, max)
+         _14 := l.$struct_Node$left
+         _15 := l.$struct_Node$val
+         _16 := _15 - 1
+         $method_tree_remove_lemma_left(_14, x, min, _16)
+       }
+     }
+   }
+   fold acc(bstRemove(l, x, min, max), write)
+ }
+ method $method_tree_remove_lemma_left2(l: Ref, newX: Int, x: Int, min: Int, max: Int)
+   requires acc(bstRemove(l, x, min, max), write) && max < newX
+   ensures acc(bstRemove(l, newX, min, max), write)
+ {
+   var _: Bool
+   var _1: Ref
+   var _2: Bool
+   var _3: Ref
+   var _4: Int
+   var _5: Int
+   var _6: Ref
+   var _7: Bool
+   var _8: Ref
+   var _9: Int
+   var _10: Int
+   var _11: Ref
+   var _12: Int
+   var _13: Int
+   var _14: Ref
+   var _15: Int
+   var _16: Int
+   _ := l == null
+   if (_) {
+     
+   } else {
+     unfold acc(bstRemove(l, x, min, max), write)
+     _1 := l.$struct_Node$left
+     _2 := _1 == null
+     if (_2) {
+       _3 := l.$struct_Node$right
+       _4 := l.$struct_Node$val
+       _5 := _4 + 1
+       $method_tree_remove_lemma_left2(_3, newX, x, _5, max)
+       fold acc(bstRemove(l.$struct_Node$left, newX, min, l.$struct_Node$val - 1), write)
+     } else {
+       _6 := l.$struct_Node$right
+       _7 := _6 == null
+       if (_7) {
+         _8 := l.$struct_Node$left
+         _9 := l.$struct_Node$val
+         _10 := _9 - 1
+         $method_tree_remove_lemma_left2(_8, newX, x, min, _10)
+         fold acc(bstRemove(l.$struct_Node$right, newX, l.$struct_Node$val + 1, max), write)
+       } else {
+         _11 := l.$struct_Node$right
+         _12 := l.$struct_Node$val
+         _13 := _12 + 1
+         $method_tree_remove_lemma_left2(_11, newX, x, _13, max)
+         _14 := l.$struct_Node$left
+         _15 := l.$struct_Node$val
+         _16 := _15 - 1
+         $method_tree_remove_lemma_left2(_14, newX, x, min, _16)
+       }
+     }
+   }
+   fold acc(bstRemove(l, newX, min, max), write)
+ }
+ method $method_tree_remove_lemma_min(root: Ref, x: Int, newMin: Int, min: Int, max: Int)
+   requires acc(bstRemove(root, x, min, max), write) && newMin <= min
+   ensures acc(bstRemove(root, x, newMin, max), write)
+ {
+   var _: Bool
+   var _1: Ref
+   var _2: Int
+   var _3: Int
+   _ := root == null
+   if (_) {
+     
+   } else {
+     unfold acc(bstRemove(root, x, min, max), write)
+     _1 := root.$struct_Node$left
+     _2 := root.$struct_Node$val
+     _3 := _2 - 1
+     $method_tree_remove_lemma_min(_1, x, newMin, min, _3)
+   }
+   fold acc(bstRemove(root, x, newMin, max), write)
+ }
+ method $method_tree_remove_lemma_max(root: Ref, x: Int, newMax: Int, min: Int, max: Int)
+   requires acc(bstRemove(root, x, min, max), write) && max <= newMax
+   ensures acc(bstRemove(root, x, min, newMax), write)
+ {
+   var _: Bool
+   var _1: Ref
+   var _2: Int
+   var _3: Int
+   _ := root == null
+   if (_) {
+     
+   } else {
+     unfold acc(bstRemove(root, x, min, max), write)
+     _1 := root.$struct_Node$right
+     _2 := root.$struct_Node$val
+     _3 := _2 + 1
+     $method_tree_remove_lemma_max(_1, x, newMax, _3, max)
+   }
+   fold acc(bstRemove(root, x, min, newMax), write)
+ }
+ method $method_tree_main_lemma_bst(root: Ref, x: Int, min: Int, max: Int)
+   requires acc(bstRemove(root, x, min, max), write)
+   ensures acc(bst(root, min, max), write)
+ {
+   var _: Bool
+   var _1: Ref
+   var _2: Int
+   var _3: Int
+   var _4: Ref
+   var _5: Int
+   var _6: Int
+   _ := root == null
+   if (_) {
+     
+   } else {
+     unfold acc(bstRemove(root, x, min, max), write)
+     _1 := root.$struct_Node$left
+     _2 := root.$struct_Node$val
+     _3 := _2 - 1
+     $method_tree_main_lemma_bst(_1, x, min, _3)
+     _4 := root.$struct_Node$right
+     _5 := root.$struct_Node$val
+     _6 := _5 + 1
+     $method_tree_main_lemma_bst(_4, x, _6, max)
+   }
+   fold acc(bst(root, min, max), write)
+ }
+ method $method_tree_main_lemma(root: Ref, x: Int)
+   requires acc(treeRemove(root, x), write)
+   ensures acc(tree(root), write)
+ {
+   var _: Int
+   unfold acc(treeRemove(root, x), write)
+   _ := -2147483647
+   $method_tree_main_lemma_bst(root, x, _, 2147483647)
+   fold acc(tree(root), write)
+ }
+ method $method_create_tree_helper(val: Int, min: Int, max: Int) returns ($return: Ref)
+   requires min <= val && val <= max
+   ensures acc(bst($return, min, max), write)
+ {
+   var root: Ref
+   root := new($struct_Node$val, $struct_Node$left, $struct_Node$right)
+   root.$struct_Node$val := val
+   root.$struct_Node$left := null
+   root.$struct_Node$right := null
+   fold acc(bst(root.$struct_Node$left, min, root.$struct_Node$val - 1), write)
+   fold acc(bst(root.$struct_Node$right, root.$struct_Node$val + 1, max), write)
+   fold acc(bst(root, min, max), write)
+   $return := root
+ }
+ method $method_create_tree(val: Int) returns ($return: Ref)
+   requires -2147483647 <= val && val <= 2147483647
+   ensures acc(tree($return), write)
+ {
+   var res: Ref
+   var res1: Int
+   res1 := -2147483647
+   res := $method_create_tree_helper(val, res1, 2147483647)
+   fold acc(tree(res), write)
+   $return := res
+ }
+ method $method_tree_max_helper(root: Ref, min: Int, max: Int) returns ($return: Int)
+   requires acc(bst(root, min, max), write) && root != null
+   ensures acc(bst(root, min, $return), write) && $return <= max
+ {
+   var v: Int
+   var r: Ref
+   var _: Bool
+   var m: Int
+   var m1: Int
+   unfold acc(bst(root, min, max), write)
+   v := root.$struct_Node$val
+   r := root.$struct_Node$right
+   _ := r == null
+   if (_) {
+     fold acc(bst(r, v + 1, v), write)
+     fold acc(bst(root, min, v), write)
+     $return := v
+   } else {
+     m1 := v + 1
+     m := $method_tree_max_helper(r, m1, max)
+     unfold acc(bst(r, v + 1, m), write)
+     assert v <= m
+     fold acc(bst(r, v + 1, m), write)
+     fold acc(bst(root, min, m), write)
+     $return := m
+   }
+ }
+ method $method_tree_max(root: Ref) returns ($return: Int)
+   requires acc(tree(root), write) && root != null
+   ensures acc(tree(root), write)
+ {
+   var res: Int
+   var res1: Int
+   var _: Int
+   unfold acc(tree(root), write)
+   res1 := -2147483647
+   res := $method_tree_max_helper(root, res1, 2147483647)
+   _ := -2147483647
+   $method_tree_max_lemma(root, 2147483647, _, res)
+   fold acc(tree(root), write)
+   $return := res
+ }
+ method $method_tree_min_helper(root: Ref, min: Int, max: Int) returns ($return: Int)
+   requires acc(bst(root, min, max), write) && root != null
+   ensures acc(bst(root, $return, max), write) && min <= $return
+ {
+   var v: Int
+   var l: Ref
+   var _: Bool
+   var m: Int
+   var m1: Int
+   unfold acc(bst(root, min, max), write)
+   v := root.$struct_Node$val
+   l := root.$struct_Node$left
+   _ := l == null
+   if (_) {
+     fold acc(bst(l, v, v - 1), write)
+     fold acc(bst(root, v, max), write)
+     $return := v
+   } else {
+     m1 := v - 1
+     m := $method_tree_min_helper(l, min, m1)
+     unfold acc(bst(l, m, v - 1), write)
+     assert m <= v
+     fold acc(bst(l, m, v - 1), write)
+     fold acc(bst(root, m, max), write)
+     $return := m
+   }
+ }
+ method $method_tree_min(root: Ref) returns ($return: Int)
+   requires acc(tree(root), write) && root != null
+   ensures acc(tree(root), write)
+ {
+   var res: Int
+   var res1: Int
+   var _: Int
+   unfold acc(tree(root), write)
+   res1 := -2147483647
+   res := $method_tree_min_helper(root, res1, 2147483647)
+   _ := -2147483647
+   $method_tree_min_lemma(root, _, res, 2147483647)
+   fold acc(tree(root), write)
+   $return := res
+ }
+ method $method_tree_contains_helper(root: Ref, x: Int, min: Int, max: Int) returns ($return: Bool)
+   requires acc(bst(root, min, max), write)
+   ensures acc(bst(root, min, max), write)
+ {
+   var _: Bool
+   var v: Int
+   var l: Ref
+   var r: Ref
+   var _1: Bool
+   var _2: Bool
+   var temp1: Bool
+   var temp11: Int
+   var temp2: Bool
+   var temp21: Int
+   _ := root == null
+   if (_) {
+     $return := false
+   } else {
+     unfold acc(bst(root, min, max), write)
+     v := root.$struct_Node$val
+     l := root.$struct_Node$left
+     r := root.$struct_Node$right
+     _1 := v == x
+     if (_1) {
+       fold acc(bst(root, min, max), write)
+       $return := true
+     } else {
+       _2 := x < v
+       if (_2) {
+         temp11 := v - 1
+         temp1 := $method_tree_contains_helper(l, x, min, temp11)
+         fold acc(bst(root, min, max), write)
+         $return := temp1
+       } else {
+         temp21 := v + 1
+         temp2 := $method_tree_contains_helper(r, x, temp21, max)
+         fold acc(bst(root, min, max), write)
+         $return := temp2
+       }
+     }
+   }
+ }
+ method $method_tree_contains(root: Ref, x: Int) returns ($return: Bool)
+   requires acc(tree(root), write)
+   ensures acc(tree(root), write)
+ {
+   var res: Bool
+   var res1: Int
+   unfold acc(tree(root), write)
+   res1 := -2147483647
+   res := $method_tree_contains_helper(root, x, res1, 2147483647)
+   fold acc(tree(root), write)
+   $return := res
+ }
+ method $method_tree_add_helper(root: Ref, x: Int, min: Int, max: Int) returns ($return: Ref)
+   requires acc(bst(root, min, max), write) && min <= x && x <= max
+   ensures acc(bst($return, min, max), write)
+ {
+   var _: Bool
+   var _1: Ref
+   var v: Int
+   var l: Ref
+   var r: Ref
+   var _2: Bool
+   var _3: Bool
+   var left: Int
+   var left1: Ref
+   var left2: Int
+   var left3: Ref
+   var _4: Bool
+   var _5: Bool
+   var right: Int
+   var right1: Ref
+   var right2: Int
+   var right3: Ref
+   unfold acc(bst(root, min, max), write)
+   _ := root == null
+   if (_) {
+     _1 := $method_create_tree_helper(x, min, max)
+     $return := _1
+   } else {
+     v := root.$struct_Node$val
+     l := root.$struct_Node$left
+     r := root.$struct_Node$right
+     _2 := x < v
+     if (_2) {
+       _3 := l != null
+       if (_3) {
+         left := v - 1
+         left1 := $method_tree_add_helper(l, x, min, left)
+         root.$struct_Node$left := left1
+       } else {
+         left2 := v - 1
+         left3 := $method_create_tree_helper(x, min, left2)
+         root.$struct_Node$left := left3
+       }
+     } else {
+       _4 := v < x
+       if (_4) {
+         _5 := r != null
+         if (_5) {
+           right := v + 1
+           right1 := $method_tree_add_helper(r, x, right, max)
+           root.$struct_Node$right := right1
+         } else {
+           right2 := v + 1
+           right3 := $method_create_tree_helper(x, right2, max)
+           root.$struct_Node$right := right3
+         }
+       }
+     }
+     fold acc(bst(root, min, max), write)
+     $return := root
+   }
+ }
+ method $method_tree_add(root: Ref, x: Int) returns ($return: Ref)
+   requires acc(tree(root), write) && -2147483647 <= x && x <= 2147483647
+   ensures acc(tree($return), write)
+ {
+   var res: Ref
+   var res1: Int
+   unfold acc(tree(root), write)
+   res1 := -2147483647
+   res := $method_tree_add_helper(root, x, res1, 2147483647)
+   fold acc(tree(res), write)
+   $return := res
+ }
+ method $method_tree_remove_helper(root: Ref, x: Int, min: Int, max: Int) returns ($return: Ref)
+   requires acc(bst(root, min, max), write)
+   ensures acc(bstRemove($return, x, min, max), write)
+ {
+   var _: Bool
+   var v: Int
+   var l: Ref
+   var r: Ref
+   var _1: Bool
+   var left: Int
+   var left1: Ref
+   var _2: Int
+   var _3: Bool
+   var right: Int
+   var right1: Ref
+   var _4: Int
+   var _5: Bool
+   var _6: Bool
+   var _7: Int
+   var _8: Int
+   var _9: Bool
+   var _10: Int
+   var _11: Int
+   var m: Int
+   var m1: Int
+   var left2: Ref
+   var _12: Ref
+   var _13: Ref
+   var _14: Int
+   var _15: Int
+   var _16: Int
+   var _17: Int
+   _ := root == null
+   if (_) {
+     fold acc(bstRemove(root, x, min, max), write)
+     $return := root
+   } else {
+     unfold acc(bst(root, min, max), write)
+     v := root.$struct_Node$val
+     l := root.$struct_Node$left
+     r := root.$struct_Node$right
+     _1 := x < v
+     if (_1) {
+       left := v - 1
+       left1 := $method_tree_remove_helper(l, x, min, left)
+       root.$struct_Node$left := left1
+       _2 := v + 1
+       $method_tree_remove_lemma_right(r, x, _2, max)
+       fold acc(bstRemove(root, x, min, max), write)
+       $return := root
+     } else {
+       _3 := v < x
+       if (_3) {
+         right := v + 1
+         right1 := $method_tree_remove_helper(r, x, right, max)
+         root.$struct_Node$right := right1
+         _4 := v - 1
+         $method_tree_remove_lemma_left(l, x, min, _4)
+         fold acc(bstRemove(root, x, min, max), write)
+         $return := root
+       } else {
+         _5 := l == null
+         if (_5) {
+           _6 := r == null
+           if (_6) {
+             fold acc(bstRemove(null, x, min, max), write)
+             $return := null
+           } else {
+             _7 := v + 1
+             $method_tree_remove_lemma_right(r, x, _7, max)
+             _8 := v + 1
+             $method_tree_remove_lemma_min(r, x, min, _8, max)
+             $return := r
+           }
+         } else {
+           _9 := r == null
+           if (_9) {
+             _10 := v - 1
+             $method_tree_remove_lemma_left(l, x, min, _10)
+             _11 := v - 1
+             $method_tree_remove_lemma_max(l, x, max, min, _11)
+             $return := l
+           } else {
+             m1 := v - 1
+             m := $method_tree_max_helper(l, min, m1)
+             unfold acc(bst(l, min, m), write)
+             assert min <= m
+             fold acc(bst(l, min, m), write)
+             root.$struct_Node$val := m
+             left2 := $method_tree_remove_helper(l, m, min, m)
+             root.$struct_Node$left := left2
+             _12 := root.$struct_Node$left
+             $method_tree_remove_lemma(_12, min, m)
+             _13 := root.$struct_Node$left
+             _14 := m - 1
+             $method_tree_remove_lemma_left2(_13, x, m, min, _14)
+             _15 := v + 1
+             $method_tree_remove_lemma_right(r, x, _15, max)
+             _16 := m + 1
+             _17 := v + 1
+             $method_tree_remove_lemma_min(r, x, _16, _17, max)
+             fold acc(bstRemove(root, x, min, max), write)
+             $return := root
+           }
+         }
+       }
+     }
+   }
+ }
+ method $method_tree_remove(root: Ref, x: Int) returns ($return: Ref)
+   requires acc(tree(root), write)
+   ensures acc(treeRemove($return, x), write)
+ {
+   var res: Ref
+   var res1: Int
+   unfold acc(tree(root), write)
+   res1 := -2147483647
+   res := $method_tree_remove_helper(root, x, res1, 2147483647)
+   fold acc(treeRemove(res, x), write)
+   $return := res
+ }
+ method $method_main() returns ($return: Int)
+   requires true
+   ensures true
+ {
+   var t1: Ref
+   var t2: Ref
+   var t3: Ref
+   var t4: Ref
+   var t5: Ref
+   var a: Bool
+   var b: Bool
+   var c: Bool
+   var d: Bool
+   var e: Bool
+   var f: Bool
+   var _: Bool
+   var _1: Bool
+   var _2: Bool
+   t1 := null
+   t2 := null
+   t3 := null
+   t4 := null
+   t5 := null
+   a := false
+   b := false
+   c := false
+   d := false
+   e := false
+   f := false
+   t1 := $method_create_tree(3)
+   b := $method_tree_contains(t1, 2)
+   _ := !b
+   t2 := $method_tree_add(t1, 2)
+   a := $method_tree_contains(t2, 2)
+   c := $method_tree_contains(t2, 3)
+   t3 := $method_tree_remove(t2, 3)
+   $method_tree_main_lemma(t3, 3)
+   d := $method_tree_contains(t3, 3)
+   _1 := !d
+   t4 := $method_tree_add(t3, 3)
+   e := $method_tree_contains(t4, 2)
+   t5 := $method_tree_remove(t4, 3)
+   $method_tree_main_lemma(t5, 3)
+   f := $method_tree_contains(t5, 3)
+   _2 := !f
+   $return := 0
+ }

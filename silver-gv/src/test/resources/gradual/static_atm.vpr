@@ -1,0 +1,17 @@
+// Should parse but fail verification
+
+method withdraw(balance: Int, amount: Int) returns (remaining: Int)
+    requires balance >= amount && amount > 0
+    ensures remaining >= 0
+{
+    assert balance >= amount
+    remaining := balance - amount
+}
+
+method main()
+{
+    var bal: Int := 100
+    bal := withdraw(bal, 30)
+    //:: ExpectedOutput(call.precondition:assertion.false)
+    bal := withdraw(bal, 40)
+}

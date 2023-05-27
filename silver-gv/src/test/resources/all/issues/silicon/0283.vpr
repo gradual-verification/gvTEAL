@@ -1,0 +1,10 @@
+// Any copyright is dedicated to the Public Domain.
+// http://creativecommons.org/publicdomain/zero/1.0/
+
+//:: ExpectedOutput(parser.error)
+method test1(xs: Seq[Int])
+  // ExpectedOutput(not.wellformed:seq.index.length) // revive this annotation when parser error not expected in this test file - Jenna
+  requires forall i: Int :: 0 <= i && i <= |xs| ==> xs[i] == 0
+
+method test2(xs: Seq[Int])
+  requires forall i: Int :: 0 <= i && i < |xs| ==> xs[i] == 0
