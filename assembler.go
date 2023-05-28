@@ -98,7 +98,10 @@ const assemblerNoVersion = (^uint64(0))
 // assembler optimizes constants introduced by pseudo-ops
 const optimizeConstantsEnabledVersion = 4
 
-var viperCode string = "method add() returns ($result: Bool)\n \trequires true\n\tensures true\n{\n\t"
+var viperCode string = ""
+
+//var viperCode string = "method add() returns ($result: Bool)\n \trequires true\n\tensures true\n{\n\t"
+//var viperCode string = "method add() returns ($result: Bool)\n{\n\t"
 
 var variableCount int64 = 0
 
@@ -1103,6 +1106,8 @@ type OpStream struct {
 	macros map[string][]string
 
 	errorf errorfFunc
+
+	lastOpType string
 }
 
 func byteImm(value string, label string) (byte, error) {
@@ -1443,8 +1448,9 @@ func pragma(ops *OpStream, tokens []string) error {
 // newline not included since handled in scanner
 var tokenSeparators = [256]bool{'\t': true, ' ': true, ';': true}
 
-func tokensFromLine(line string) []string {
+func tokensFromLine(line string) ([]string, []string) {
 	var tokens []string
+	var specifications []string
 
 	i := 0
 	for i < len(line) && tokenSeparators[line[i]] {
@@ -1456,6 +1462,7 @@ func tokensFromLine(line string) []string {
 	start := i
 	inString := false // tracked to allow spaces and comments inside
 	inBase64 := false // tracked to allow '//' inside
+
 	for i < len(line) {
 		if !tokenSeparators[line[i]] { // if not space
 			switch line[i] {
@@ -1471,10 +1478,25 @@ func tokensFromLine(line string) []string {
 				}
 			case '/': // is a comment?
 				if i < len(line)-1 && line[i+1] == '/' && !inBase64 && !inString {
-					if start != i { // if a comment without whitespace
-						tokens = append(tokens, line[start:i])
+					i += 2                               // skip the '//'
+					if i < len(line) && line[i] == '@' { // is a specification?
+						i++ // skip the '@'
+						specStart := i
+						// Find the end of the specification (either end of line or semicolon)
+						for i < len(line) && line[i] != ';' {
+							i++
+						}
+						spec := strings.TrimSpace(line[specStart:i])
+						specifications = append(specifications, spec)
+						if i < len(line) && line[i] == ';' {
+							i++
+						}
+					} else { // if not specification, then a normal comment
+						if start != i-2 { // if a comment without whitespace
+							tokens = append(tokens, line[start:i-2])
+						}
 					}
-					return tokens
+					start = i
 				}
 			case '(': // is base64( seq?
 				prefix := line[start:i]
@@ -1524,7 +1546,9 @@ func tokensFromLine(line string) []string {
 		tokens = append(tokens, line[start:i])
 	}
 
-	return tokens
+	// fmt.Println("tokens from tokenFromLines are")
+	// fmt.Println(tokens)
+	return tokens, specifications
 
 }
 
@@ -1815,11 +1839,47 @@ func (ops *OpStream) resolveLabels() {
 }
 
 // trackStack checks that the typeStack has `args` on it, then pushes `returns` to it.
-func (ops *OpStream) trackStack(args StackTypes, returns StackTypes, instruction []string) {
+func (ops *OpStream) trackStack(args StackTypes, returns StackTypes, instruction []string, specifications []string) {
+	// Map of instructions to their corresponding return types in Viper
+	instructionReturnTypes := map[string]string{
+		"+":  "Int",
+		"==": "Bool",
+	}
+
 	// If in deadcode, allow anything. Maybe it's some sort of onchain data.
 	if ops.known.deadcode {
 		return
 	}
+
+	// Initialize viperCode with the method signature
+	if viperCode == "" {
+		returnType := "Bool"
+		if rt, ok := instructionReturnTypes[ops.lastOpType]; ok {
+			returnType = rt
+		}
+		viperCode = fmt.Sprintf("method add() returns ($result: %s)\n", returnType)
+	}
+
+	// Handle specifications after checking for return instruction
+	for _, spec := range specifications {
+		//fmt.Println(spec)
+		keywordIndex := strings.Index(spec, "requires")
+		if keywordIndex != -1 {
+			viperCode += fmt.Sprintf("\trequires %s\n", strings.TrimSpace(spec[keywordIndex+9:]))
+		}
+		keywordIndex = strings.Index(spec, "ensures")
+		if keywordIndex != -1 {
+			viperCode += fmt.Sprintf("\tensures %s\n", strings.TrimSpace(spec[keywordIndex+8:]))
+		}
+	}
+
+	if specifications != nil && len(specifications) > 0 {
+		viperCode += "{\n"
+	}
+
+	// Update the last op type after processing return
+	ops.lastOpType = instruction[0]
+
 	argcount := len(args)
 	if argcount > len(ops.known.stack) && ops.known.bottom.AVMType == avmNone {
 		ops.typeErrorf("%s expects %d stack arguments but stack height is %d",
@@ -1831,21 +1891,20 @@ func (ops *OpStream) trackStack(args StackTypes, returns StackTypes, instruction
 		var viperVar string = fmt.Sprintf("t%d", variableCount)
 		if argcount == 0 {
 			var viperCodeStatement string = "\tvar " + viperVar + ":Int := " + returns[0].String()
-			viperCode += viperCodeStatement + "\n\t"
+			viperCode += viperCodeStatement + "\n"
 		} else {
-
 			if instruction[0] == "+" {
 				var t2, _ = viperStack.Pop()
 				var t1, _ = viperStack.Pop()
 				var viperCodeStatement string = "\tvar " + viperVar + ":Int := " + t1 + "+" + t2
-				viperCode += viperCodeStatement + "\n\t"
+				viperCode += viperCodeStatement + "\n"
 			}
 
 			if instruction[0] == "==" {
 				var t2, _ = viperStack.Pop()
 				var t1, _ = viperStack.Pop()
 				var viperCodeStatement string = "\tvar " + viperVar + ":Bool := " + t1 + "==" + t2
-				viperCode += viperCodeStatement + "\n\t"
+				viperCode += viperCodeStatement + "\n"
 			}
 
 			if instruction[0] == "return" {
@@ -1853,7 +1912,6 @@ func (ops *OpStream) trackStack(args StackTypes, returns StackTypes, instruction
 				var viperCodeStatement string = "\t$result := " + t2
 				viperCode += viperCodeStatement + "\n}"
 			}
-
 		}
 		viperStack.Push(viperVar)
 		variableCount++
@@ -1887,6 +1945,8 @@ func (ops *OpStream) trackStack(args StackTypes, returns StackTypes, instruction
 		}
 		ops.trace(")")
 	}
+	// fmt.Println("Viper code is")
+	// fmt.Println(viperCode)
 }
 
 func (ops *OpStream) assemble(text string) {
@@ -1897,10 +1957,15 @@ func (ops *OpStream) assemble(text string) {
 
 	fin := strings.NewReader(text)
 	scanner := bufio.NewScanner(fin)
+	var specifications []string
+	specsHandled := false
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		tokens := tokensFromLine(line)
+		tokens, newSpecifications := tokensFromLine(line)
+		specifications = append(specifications, newSpecifications...)
+		// fmt.Println("After calling tokensFromLine, specs are")
+		// fmt.Println(specifications)
 
 		if len(tokens) > 0 {
 			if first := tokens[0]; first[0] == '#' {
@@ -1966,7 +2031,18 @@ func (ops *OpStream) assemble(text string) {
 					//fmt.Println(args)
 					//fmt.Println(returns)
 				}
-				ops.trackStack(args, returns, append([]string{expandedName}, current[1:]...))
+
+				if !specsHandled && len(specifications) > 0 {
+					// fmt.Println("Before calling trackStack, specs are")
+					// fmt.Println(specifications)
+					ops.trackStack(args, returns, append([]string{expandedName}, current[1:]...), specifications)
+					specsHandled = true // Update specsHandled after handling
+				} else {
+					ops.trackStack(args, returns, append([]string{expandedName}, current[1:]...), []string{})
+				}
+				// fmt.Println("Before calling trackStack, specs are")
+				// fmt.Println(specifications)
+				// ops.trackStack(args, returns, append([]string{expandedName}, current[1:]...), specifications)
 				spec.asm(ops, &spec, current[1:]) //nolint:errcheck // ignore error and continue, to collect more errors
 
 				if spec.deadens() { // An unconditional branch deadens the following code
@@ -2020,12 +2096,14 @@ func (ops *OpStream) assemble(text string) {
 func main() {
 	source := `
 	#pragma version 1
+	//@ requires true;
+	//@ ensures true;
 	int 20
 	int 15
 	+
 	int 55
 	==
-	return;
+	return
 	`
 
 	var ver uint64 = uint64(1)
@@ -2038,7 +2116,7 @@ func main() {
 	}
 	defer f.Close()
 	fmt.Fprintln(f, viperCode)
-	cmd := exec.Command("/bin/sh", "-c", "cd ../silicon-gv && sbt 'run ../gvTEAL/teal.vpr'")
+	cmd := exec.Command("/bin/sh", "-c", "cd ../silicon-gv && export Z3_EXE=/usr/bin/z3 && sbt 'run ../gvTEAL/teal.vpr'")
 	stdout, err := cmd.Output()
 	if err != nil {
 		fmt.Println(err)
